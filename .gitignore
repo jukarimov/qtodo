@@ -2,3 +2,5 @@
 qtodo
 *.o
 *~
+*.pro
+Makefile
