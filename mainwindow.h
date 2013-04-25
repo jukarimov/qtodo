@@ -15,6 +15,10 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void dayTimeNote(int day, QString time, QString note) {
+        this->Daylist[day].time.push_back(time);
+        this->Daylist[day].note.push_back(note);
+    };
 
 protected:
     void changeEvent(QEvent *e);
@@ -22,10 +26,15 @@ protected:
 private:
     Ui::MainWindow *ui;
 
-private slots:
-    void on_pushNew_clicked();
-    void on_pushDelete_clicked();
+    struct daylist {
+        QVector<QString> time;
+        QVector<QString> note;
+    } Daylist[7];
 
+    int colTime;
+    int colNote;
+
+private slots:
     void on_comboDay_currentIndexChanged(int index);
 };
 
