@@ -1,4 +1,6 @@
 *.xml
+.*.db
+*.sql
 qtodo
 *.o
 *~

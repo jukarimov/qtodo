@@ -5,18 +5,16 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    int day;
-    int row;
+    int day = 0, row = 0;
 
     colTime = 0;
     colNote = 1;
 
-    QString timestr;
-    QString notestr;
-
     ui->setupUi(this);
 
     ui->table->setColumnWidth(colNote, 600);
+
+#ifdef STORE_XML
 
     QFile file("todo.xml");
     if (!file.open(QIODevice::ReadOnly)) {
@@ -73,9 +71,23 @@ MainWindow::MainWindow(QWidget *parent) :
             }
         }
     }
-    for (int i = 0; i < 7; ++i) {
 
-        if (Daylist[i].time.size()) {
+#else
+
+    db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(".qtodo.db");
+
+    day = 1;
+    dbFetchTable(day);
+
+#endif
+
+    qDebug() << "size: " << Daylist[1].time.size();
+
+    //for (int i = 0; i < 7; ++i) {
+    int i = 1;
+
+       if (Daylist[i].time.size()) {
 
             qDebug() << "day: " << i;
 
@@ -95,12 +107,54 @@ MainWindow::MainWindow(QWidget *parent) :
                 ui->table->setCellWidget(row, colNote, cell2);
             }
         }
-    }
+    //}
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::dbFetchTable(int day)
+{
+    if (!db.open()) {
+
+        qDebug() << "DB::ERROR: " << db.lastError().text();
+        return;
+    }
+
+    QString q = QString("SELECT day, h, m, note FROM todo WHERE day = %1").arg(day);
+
+    qDebug() << "DB::QUERY: " << q;
+
+    QSqlQuery sq;
+
+    if (!sq.exec(q)) {
+
+        qDebug() << "DB::ERROR: CANNOT EXECUTE QUERY";
+        return;
+    }
+
+    QSqlRecord sr = sq.record();
+
+    while (sq.next())
+    {
+        qDebug() << sq.value(sr.indexOf("day")).toString() <<
+                    sq.value(sr.indexOf("h")).toString() <<
+                    sq.value(sr.indexOf("m")).toString() <<
+                    sq.value(sr.indexOf("note")).toString();
+
+        day = sq.value(sr.indexOf("day")).toInt();
+
+
+        timestr = sq.value(sr.indexOf("h")).toString();
+        timestr += sq.value(sr.indexOf("m")).toInt() <= 9 ? ":0" : ":";
+        timestr += sq.value(sr.indexOf("m")).toString();
+
+        notestr = sq.value(sr.indexOf("note")).toString();
+
+        dayTimeNote(day, timestr, notestr);
+    }
 }
 
 void MainWindow::changeEvent(QEvent *e)
@@ -118,6 +172,11 @@ void MainWindow::changeEvent(QEvent *e)
 void MainWindow::on_comboDay_currentIndexChanged(int index)
 {
     qDebug() << "getting index: " << index;
+
+    index++;
+
+    dbFetchTable(index);
+
     int row;
 
     ui->table->setRowCount(0);
